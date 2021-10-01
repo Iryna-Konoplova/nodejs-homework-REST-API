@@ -8,8 +8,14 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 12,
   },
+  // rules: {
+  //   'comma-dangle': 'off',
+  //   'space-before-function-paren': 'off',
+  // },
   rules: {
     'comma-dangle': 'off',
     'space-before-function-paren': 'off',
+    semi: 0,
   },
+
 }
