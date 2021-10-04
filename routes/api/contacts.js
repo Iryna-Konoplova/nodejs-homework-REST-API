@@ -1,27 +1,13 @@
 const express = require('express')
 const router = express.Router()
 const { NotFound, BadRequest } = require('http-errors')
-const Joi = require('joi');
+const { joiSchema } = require('../../models/contact')
 
-const {
-  listContacts,
-  getContactById,
-  addContact,
-  updateContactById,
-  removeContact
-} = require('../../model/index');
-
-const joiSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string()
-    .email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
-    .required(),
-  phone: Joi.string().required(),
-})
+const { Contact } = require('../../models');
 
 router.get('/', async (req, res, next) => {
   try {
-    const contacts = await listContacts();
+    const contacts = await Contact.find();
     res.json(contacts);
   } catch (error) {
     next(error);
@@ -31,7 +17,7 @@ router.get('/', async (req, res, next) => {
 router.get('/:contactId', async (req, res, next) => {
   try {
     const { contactId } = req.params;
-    const contact = await getContactById(contactId);
+    const contact = await Contact.findOne({ _id: contactId });
     if (!contact) {
       throw new NotFound(`Product with id=${contactId} not found`);
     }
@@ -47,7 +33,7 @@ router.post('/', async (req, res, next) => {
     if (error) {
       throw new BadRequest(error.message);
     }
-    const result = await addContact(req.body);
+    const result = await Contact.create(req.body);
     res.status(201).json({
       status: 'success',
       code: 201,
@@ -61,7 +47,7 @@ router.post('/', async (req, res, next) => {
 router.delete('/:contactId', async (req, res, next) => {
   try {
     const { contactId } = req.params;
-    const contact = await removeContact(contactId);
+    const contact = await Contact.findByIdAndRemove({ _id: contactId });
     if (!contact) {
       throw new NotFound(`Product with id=${contactId} not found`);
     }
@@ -82,7 +68,7 @@ router.patch('/:contactId', async (req, res, next) => {
       throw new BadRequest(error.message);
     }
     const { contactId } = req.params;
-    const result = await updateContactById(contactId, req.body);
+    const result = await Contact.findByIdAndUpdate({ _id: contactId }, req.body, { new: true });
     if (!result) {
       throw new NotFound(`Product with id=${contactId} not found`)
     }
@@ -94,6 +80,31 @@ router.patch('/:contactId', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+})
+
+router.patch('/:contactId/favorite', async (req, res, next) => {
+  if (req.body.favorite === undefined) {
+    res.status(400).json({
+      status: 'error',
+      code: 404,
+      message: 'missing field favorite'
+    })
+    return
+  }
+  const { contactId } = req.params
+  const result = await Contact.findByIdAndUpdate({ _id: contactId }, { ...req.body }, { new: true })
+  if (!result) {
+    res.status(404).json({
+      status: 'error',
+      code: 404,
+      message: `Contact with id ${contactId} not found`
+    })
+    return
+  }
+  res.json({
+    status: 'successfuly updated',
+    code: 202
+  })
 })
 
 module.exports = router
