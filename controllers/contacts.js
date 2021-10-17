@@ -7,7 +7,8 @@ const { Contact } = require('../models');
 // };
 
 const getAll = async (req, res) => {
-  const result = await Contact.find({}, '_id name email phone favorite');
+  const { _id } = req.user;
+  const result = await Contact.find({ owner: _id }, '_id name email phone favorite').populate('owner', 'email');
   res.json({
     status: 'success',
     code: 200,
@@ -30,7 +31,8 @@ const getById = async (req, res) => {
 };
 
 const add = async (req, res) => {
-  const result = await Contact.create(req.body);
+  const newContact = { ...req.body, owner: req.user._id }
+  const result = await Contact.create(newContact);
   res.status(201).json({
     status: 'success',
     code: 201,
