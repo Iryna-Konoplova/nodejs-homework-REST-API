@@ -1,13 +1,11 @@
 const { NotFound } = require('http-errors')
 const { Contact } = require('../models');
 
-// const getAll = async (req, res, next) => {
-//   const contacts = await Contact.find();
-//   res.json(contacts);
-// };
-
 const getAll = async (req, res) => {
-  const result = await Contact.find({}, '_id name email phone favorite');
+  const { page = 1, limit = 20 } = req.query;
+  const skip = (page - 1) * limit;
+  const { _id } = req.user;
+  const result = await Contact.find({ owner: _id }, '_id name email phone favorite', { skip, limit: +limit }).populate('owner', 'email');
   res.json({
     status: 'success',
     code: 200,
@@ -17,7 +15,6 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   const { contactId } = req.params;
-  // const result = await Contact.findOne({ _id: contactId });
   const result = await Contact.findById(contactId, '_id name email phone favorite');
   if (!result) {
     throw new NotFound(`Product with id=${contactId} not found`);
@@ -30,7 +27,8 @@ const getById = async (req, res) => {
 };
 
 const add = async (req, res) => {
-  const result = await Contact.create(req.body);
+  const newContact = { ...req.body, owner: req.user._id }
+  const result = await Contact.create(newContact);
   res.status(201).json({
     status: 'success',
     code: 201,
