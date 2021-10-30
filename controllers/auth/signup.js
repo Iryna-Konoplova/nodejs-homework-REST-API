@@ -1,7 +1,9 @@
 const { Conflict } = require('http-errors');
-const gravatar = require('gravatar')
+const gravatar = require('gravatar');
+const { nanoid } = require('nanoid');
 
 const { User } = require('../../models');
+const { sendEmail } = require('../../helpers');
 
 const signup = async(req, res) => {
   const { email, password } = req.body;
@@ -10,9 +12,22 @@ const signup = async(req, res) => {
     throw new Conflict('Already registered');
   }
   const avatarURL = gravatar.url(email);
-  const newUser = new User({ email, avatarURL });
+  const verifyToken = nanoid();
+  const newUser = new User({
+    email,
+    avatarURL,
+    verifyToken
+  });
   newUser.setPassword(password);
   await newUser.save();
+
+  const mail = {
+    to: email,
+    subject: 'Подтверждение регистрации',
+    html: `<a target='_blank' href='http://localhost:3000/api/users/verify/${verifyToken}'>Нажмите для подтверждения email</a>`
+  };
+
+  sendEmail(mail);
 
   res.status(201).json({
     status: 'success',
